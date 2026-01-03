@@ -1,0 +1,8 @@
+{
+  "name": "Sondagem de Desenho e Escrita com 5 palavras para o Ensino Infantil Utilizando IA v3.0",
+  "description": "Sistema de sondagem pedagógica com IA para Educação Infantil, baseado nas fases do desenho defindos por Piaget, escrita (Ehri), consciência fonológica e matemática.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
