@@ -20,7 +20,7 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
   const [isDecisionExpanded, setIsDecisionExpanded] = useState(false);
   const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<AssessmentPeriod>('Inicial');
-  
+
   const [formsData, setFormsData] = useState<any>({
     [AssessmentType.DRAWING]: { preview: null, analysis: null, observation: "" }
   });
@@ -64,14 +64,14 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border-2 border-dashed border-gray-100 dark:border-gray-700">
           {loading ? (
             <div className="flex flex-col items-center gap-4">
-               <Loader2 size={64} className="text-orange-500 animate-spin" />
-               <p className="font-bold text-lg dark:text-white">Analisando evidências...</p>
+              <Loader2 size={64} className="text-orange-500 animate-spin" />
+              <p className="font-bold text-lg dark:text-white">Analisando evidências...</p>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-4">
-               <Brain size={64} className="text-gray-300" />
-               <p className="font-bold text-lg text-gray-400">Aguardando Análise</p>
-               <p className="text-sm text-gray-400">Envie a imagem e clique no botão de classificação.</p>
+              <Brain size={64} className="text-gray-300" />
+              <p className="font-bold text-lg text-gray-400">Aguardando Análise</p>
+              <p className="text-sm text-gray-400">Envie a imagem e clique no botão de classificação.</p>
             </div>
           )}
         </div>
@@ -95,8 +95,8 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-blue-50 dark:border-gray-700 shadow-sm">
-           <h4 className="text-base font-extrabold text-blue-900 dark:text-blue-300 mb-3">Resumo das Características</h4>
-           <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">{analysis.summary || "Sem resumo disponível."}</p>
+          <h4 className="text-base font-extrabold text-blue-900 dark:text-blue-300 mb-3">Resumo das Características</h4>
+          <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">{analysis.summary || "Sem resumo disponível."}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -120,15 +120,15 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
           </button>
           {isDecisionExpanded && (
             <div className="p-4 pt-0 border-t dark:border-gray-700">
-               <div className="text-xs leading-relaxed text-gray-600 dark:text-gray-400 mt-4 whitespace-pre-line">
-                 {analysis.reasoning || "Análise detalhada não disponível."}
-               </div>
+              <div className="text-xs leading-relaxed text-gray-600 dark:text-gray-400 mt-4 whitespace-pre-line">
+                {analysis.reasoning || "Análise detalhada não disponível."}
+              </div>
             </div>
           )}
         </div>
 
         <div className="bg-[#FAF8FF] dark:bg-purple-950/10 border border-purple-100 dark:border-purple-900/30 rounded-2xl overflow-hidden shadow-sm">
-          <button 
+          <button
             onClick={() => setIsActivitiesExpanded(!isActivitiesExpanded)}
             className="w-full flex items-center justify-between p-4 text-purple-900 dark:text-purple-300 font-extrabold"
           >
@@ -140,9 +140,9 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
           </button>
           {isActivitiesExpanded && (
             <div className="p-4 pt-0 border-t border-purple-100 dark:border-purple-900/30">
-               <div className="mt-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-white/60 dark:bg-gray-900/40 p-4 rounded-xl">
-                 {analysis.recommendedActivities || "Sugestões de atividades não geradas."}
-               </div>
+              <div className="mt-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-white/60 dark:bg-gray-900/40 p-4 rounded-xl">
+                {analysis.recommendedActivities || "Sugestões de atividades não geradas."}
+              </div>
             </div>
           )}
         </div>
@@ -156,7 +156,7 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
         <div className="p-6 border-b dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 shrink-0">
           <div>
             <h2 className="text-xl font-black text-orange-600 dark:text-orange-500 flex items-center gap-2">
-               <Palette size={24} /> Sondagem de Desenho
+              <Palette size={24} /> Sondagem de Desenho
             </h2>
             <p className="text-sm text-gray-500 font-bold">{student.name} • {student.grade}</p>
           </div>
@@ -166,7 +166,7 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
         <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#FDFBF7] dark:bg-[#0c0d0e]">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full items-stretch max-w-7xl mx-auto w-full">
             <div className="lg:col-span-5 flex flex-col gap-6">
-              
+
               <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl border dark:border-gray-700 shadow-sm">
                 <div className="flex items-center gap-2 mb-4 text-gray-700 dark:text-gray-300 font-bold uppercase text-[10px] tracking-widest">
                   <CalendarDays size={14} className="text-blue-500" />
@@ -177,11 +177,10 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
                     <button
                       key={p}
                       onClick={() => setSelectedPeriod(p)}
-                      className={`py-2 px-1 rounded-xl text-[9px] font-black transition-all border-2 ${
-                        selectedPeriod === p 
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100' 
-                        : 'bg-white dark:bg-gray-700 text-gray-400 border-gray-100 dark:border-gray-600 hover:border-blue-200'
-                      }`}
+                      className={`py-2 px-1 rounded-xl text-[9px] font-black transition-all border-2 ${selectedPeriod === p
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100'
+                          : 'bg-white dark:bg-gray-700 text-gray-400 border-gray-100 dark:border-gray-600 hover:border-blue-200'
+                        }`}
                     >
                       {p}
                     </button>
@@ -204,25 +203,25 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
                   )}
                 </div>
 
-                <button 
+                <button
                   onClick={runAnalysis}
                   disabled={loading || !formsData[activeTab].preview}
                   className="mt-6 w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all shadow-xl"
                 >
-                  {loading ? <Loader2 className="animate-spin" /> : <ScanText size={20} />} 
+                  {loading ? <Loader2 className="animate-spin" /> : <ScanText size={20} />}
                   <span>{loading ? "Processando..." : "Classificar Desenho com IA"}</span>
                 </button>
               </div>
             </div>
 
             <div className="lg:col-span-7">
-               <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-3xl border dark:border-gray-700 shadow-sm h-full flex flex-col">
-                  <div className="flex items-center gap-3 mb-8 shrink-0">
-                    <div className="bg-purple-100 p-2.5 rounded-xl text-purple-600"><Brain size={24} /></div>
-                    <span className="font-black text-lg text-gray-800 dark:text-white">Parecer da PedagogIA</span>
-                  </div>
-                  {renderAnalysisContent()}
-               </div>
+              <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-3xl border dark:border-gray-700 shadow-sm h-full flex flex-col">
+                <div className="flex items-center gap-3 mb-8 shrink-0">
+                  <div className="bg-purple-100 p-2.5 rounded-xl text-purple-600"><Brain size={24} /></div>
+                  <span className="font-black text-lg text-gray-800 dark:text-white">Parecer da PedagogIA</span>
+                </div>
+                {renderAnalysisContent()}
+              </div>
             </div>
           </div>
         </div>
@@ -233,15 +232,19 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
           </div>
           <div className="flex gap-4 w-full md:w-auto">
             <button onClick={onCancel} className="px-8 py-4 font-black text-gray-500 hover:text-gray-700">Cancelar</button>
-            <button 
-              onClick={() => onSave({ 
-                ...formsData[activeTab].analysis, 
-                studentId: student.id, 
-                date: new Date().toISOString(), 
-                type: activeTab, 
-                period: selectedPeriod, 
-                imageUrl: formsData[activeTab].preview 
-              })} 
+            <button
+              onClick={() => {
+                const assessmentId = `${student.id}_${activeTab}_${selectedPeriod}`;
+                onSave({
+                  ...formsData[activeTab].analysis,
+                  id: assessmentId,
+                  studentId: student.id,
+                  date: new Date().toISOString(),
+                  type: activeTab,
+                  period: selectedPeriod,
+                  imageUrl: formsData[activeTab].preview
+                });
+              }}
               disabled={!formsData[activeTab].analysis}
               className="px-12 py-4 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-200 text-white rounded-2xl font-black shadow-lg transition-all min-w-[220px]"
             >

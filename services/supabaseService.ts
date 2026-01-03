@@ -217,13 +217,19 @@ export const supabaseService = {
 
     deleteStudent: async (id: string) => {
         const { error } = await supabase.from('alunos').delete().eq('codigo', id);
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase Error [deleteStudent]:", error);
+            throw error;
+        }
     },
 
     // When saving assessments, we must update the specific column in ALUNOS table
     saveAssessment: async (assessment: AssessmentResult) => {
         const colName = REVERSE_MAPPING[`${assessment.type}_${assessment.period}`];
-        if (!colName) return; // Unknown period/type combo
+        if (!colName) {
+            console.warn(`Supabase Warning [saveAssessment]: Mapping not found for ${assessment.type}_${assessment.period}`);
+            return;
+        }
 
         const payload: any = {};
         payload[colName] = assessment.phase;
@@ -234,14 +240,13 @@ export const supabaseService = {
             .update(payload)
             .eq('codigo', assessment.studentId); // studentId is actually the student Code in this model
 
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase Error [saveAssessment]:", error);
+            throw error;
+        }
     },
 
     saveAssessments: async (assessments: AssessmentResult[]) => {
-        // Group by student code to batch updates? Upsert might be tricky if we don't have all columns.
-        // We will do one update per student if possible, or just sequential updates.
-        // Optimisation: Group by student.
-
         const updatesByStudent: Record<string, any> = {};
 
         assessments.forEach(a => {
@@ -253,8 +258,12 @@ export const supabaseService = {
         });
 
         // Perform updates
-        const promises = Object.entries(updatesByStudent).map(([studentCode, updates]) => {
-            return supabase.from('alunos').update(updates).eq('codigo', studentCode);
+        const promises = Object.entries(updatesByStudent).map(async ([studentCode, updates]) => {
+            const { error } = await supabase.from('alunos').update(updates).eq('codigo', studentCode);
+            if (error) {
+                console.error(`Supabase Error [saveAssessments] for student ${studentCode}:`, error);
+                throw error;
+            }
         });
 
         await Promise.all(promises);
@@ -272,18 +281,18 @@ export const supabaseService = {
             .update(payload)
             .eq('codigo', assessment.studentId);
 
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase Error [deleteAssessment]:", error);
+            throw error;
+        }
     },
 
     deleteAllStudents: async () => {
-        // In Postgres, to delete all we can use a filter that is always true
-        const { error: errorAssessments } = await supabase.from('alunos').update({
-            fase_desenho_inicial: null, fase_desenho_1bim: null, fase_desenho_2bim: null, fase_desenho_3bim: null, fase_desenho_4bim: null,
-            fase_escrita_inicial: null, fase_escrita_1bim: null, fase_escrita_2bim: null, fase_escrita_3bim: null, fase_escrita_4bim: null
-        }).neq('codigo', ''); // This clears assessments but keeps students? 
-
         // Wait, "Apagar todos os alunos" usually means DELETE the rows.
         const { error } = await supabase.from('alunos').delete().neq('codigo', '');
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase Error [deleteAllStudents]:", error);
+            throw error;
+        }
     }
 };

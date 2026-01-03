@@ -38,54 +38,77 @@ const cleanJson = (text: string | undefined): string => {
   return text.replace(/```json\s*/g, "").replace(/```\s*$/g, "").trim();
 };
 
+const callWithRetry = async (fn: () => Promise<any>, maxRetries = 3): Promise<any> => {
+  let lastError: any;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      const isRateLimit = error.message?.includes("429") || error.status === 429 || error.response?.status === 429;
+      if (isRateLimit && i < maxRetries - 1) {
+        const delay = Math.pow(2, i) * 1000;
+        console.warn(`Gemini Rate Limit (429). Retrying in ${delay}ms... (Attempt ${i + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError;
+};
+
 export const analyzeDrawing = async (modelId: string, base64Image: string): Promise<any> => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY;
   const ai = new GoogleGenAI({ apiKey });
-  const response = await ai.models.generateContent({
-    model: modelId || 'gemini-2.0-flash',
-    contents: {
-      parts: [
-        { inlineData: { mimeType: "image/jpeg", data: base64Image } },
-        {
-          text: `Analise este desenho com extremo rigor técnico para distinguir entre Garatuja Desordenada e Ordenada, ou Realismo vs Pseudo-Naturalismo conforme os critérios.
-        
-        Retorne o JSON com a fase correta e justifique tecnicamente.` }
-      ]
-    },
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          phase: {
-            type: Type.STRING,
-            enum: Object.values(DrawingPhase),
-            description: "A fase de desenvolvimento do desenho (ex: 'GARATUJA ORDENADA')"
-          },
-          ageRange: { type: Type.STRING },
-          confidence: { type: Type.NUMBER },
-          reasoning: { type: Type.STRING },
-          summary: { type: Type.STRING },
-          recommendedActivities: { type: Type.STRING },
-          markers: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                label: { type: Type.STRING },
-                description: { type: Type.STRING },
-                match: { type: Type.BOOLEAN }
-              },
-              required: ["label", "description", "match"]
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model: modelId || 'gemini-2.0-flash',
+      contents: {
+        parts: [
+          { inlineData: { mimeType: "image/jpeg", data: base64Image } },
+          {
+            text: `Analise este desenho com extremo rigor técnico para distinguir entre Garatuja Desordenada e Ordenada, ou Realismo vs Pseudo-Naturalismo conforme os critérios.
+          
+          Retorne o JSON com a fase correta e justifique tecnicamente.` }
+        ]
+      },
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            phase: {
+              type: Type.STRING,
+              enum: Object.values(DrawingPhase),
+              description: "A fase de desenvolvimento do desenho (ex: 'GARATUJA ORDENADA')"
+            },
+            ageRange: { type: Type.STRING },
+            confidence: { type: Type.NUMBER },
+            reasoning: { type: Type.STRING },
+            summary: { type: Type.STRING },
+            recommendedActivities: { type: Type.STRING },
+            markers: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  label: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  match: { type: Type.BOOLEAN }
+                },
+                required: ["label", "description", "match"]
+              }
             }
-          }
-        },
-        required: ["phase", "ageRange", "confidence", "reasoning", "summary", "recommendedActivities", "markers"]
+          },
+          required: ["phase", "ageRange", "confidence", "reasoning", "summary", "recommendedActivities", "markers"]
+        }
       }
-    }
+    });
+    return JSON.parse(cleanJson(response.text));
   });
-  return JSON.parse(cleanJson(response.text));
 };
 
 export const analyzeWritingTextOnly = async (modelId: string, producedText: string, targetWord?: string): Promise<any> => {
@@ -97,94 +120,102 @@ export const analyzeWritingTextOnly = async (modelId: string, producedText: stri
 
   const pairsHtml = targets.map((t, i) => `${i + 1}. ALVO: "${t}" | ESCRITA: "${produceds[i] || '???'}"`).join('\n');
 
-  const response = await ai.models.generateContent({
-    model: modelId || 'gemini-2.0-flash',
-    contents: `Analise as seguintes produções de escrita uma a uma:
-    
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model: modelId || 'gemini-2.0-flash',
+      contents: `Analise as seguintes produções de escrita uma a uma:
+      
 ${pairsHtml}
-    
-    INSTRUÇÕES OBRIGATÓRIAS:
-    1. Analise cada um dos ${targets.length} pares de forma INDEPENDENTE.
-    2. Atribua a fase de Ehri correta para CADA palavra no 'wordBreakdown'.
-    3. NÃO copie a classificação da primeira palavra para as outras se os desempenhos forem diferentes.
-    
-    CRITÉRIO DE DISTINÇÃO: 
-    - Se a escrita for EXATAMENTE IGUAL ao alvo ditado (ex: "BOLA" -> "BOLA"), classifique como '${WritingPhase.ALFABETICA_CONSOLIDADA}'.
-    - Se a escrita representar todos os sons mas com erros ortográficos (ex: "KAZA" para "CASA"), classifique como '${WritingPhase.ALFABETICA_COMPLETA}'.
-    - Se houver apenas pistas fonéticas parciais (ex: "B" para "BOLA"), é '${WritingPhase.ALFABETICA_PARCIAL}'.
-    - Se não houver relação fonética, é '${WritingPhase.PRE_ALFABETICA}'.`,
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          phase: {
-            type: Type.STRING,
-            enum: Object.values(WritingPhase),
-            description: "A fase predominante da sondagem geral"
-          },
-          confidence: { type: Type.NUMBER },
-          reasoning: { type: Type.STRING },
-          summary: { type: Type.STRING },
-          wordBreakdown: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                target: { type: Type.STRING },
-                produced: { type: Type.STRING },
-                phase: {
-                  type: Type.STRING,
-                  enum: Object.values(WritingPhase),
-                  description: "A classificação INDIVIDUAL deste par (PRÉ-ALFABÉTICA, ALFABÉTICA PARCIAL, ALFABÉTICA COMPLETA, ALFABÉTICA CONSOLIDADA)"
+      
+      INSTRUÇÕES OBRIGATÓRIAS:
+      1. Analise cada um dos ${targets.length} pares de forma INDEPENDENTE.
+      2. Atribua a fase de Ehri correta para CADA palavra no 'wordBreakdown'.
+      3. NÃO copie a classificação da primeira palavra para as outras se os desempenhos forem diferentes.
+      
+      CRITÉRIO DE DISTINÇÃO: 
+      - Se a escrita for EXATAMENTE IGUAL ao alvo ditado (ex: "BOLA" -> "BOLA"), classifique como '${WritingPhase.ALFABETICA_CONSOLIDADA}'.
+      - Se a escrita representar todos os sons mas com erros ortográficos (ex: "KAZA" para "CASA"), classifique como '${WritingPhase.ALFABETICA_COMPLETA}'.
+      - Se houver apenas pistas fonéticas parciais (ex: "B" para "BOLA"), é '${WritingPhase.ALFABETICA_PARCIAL}'.
+      - Se não houver relação fonética, é '${WritingPhase.PRE_ALFABETICA}'.`,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            phase: {
+              type: Type.STRING,
+              enum: Object.values(WritingPhase),
+              description: "A fase predominante da sondagem geral"
+            },
+            confidence: { type: Type.NUMBER },
+            reasoning: { type: Type.STRING },
+            summary: { type: Type.STRING },
+            wordBreakdown: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  target: { type: Type.STRING },
+                  produced: { type: Type.STRING },
+                  phase: {
+                    type: Type.STRING,
+                    enum: Object.values(WritingPhase),
+                    description: "A classificação INDIVIDUAL deste par (PRÉ-ALFABÉTICA, ALFABÉTICA PARCIAL, ALFABÉTICA COMPLETA, ALFABÉTICA CONSOLIDADA)"
+                  },
+                  explanation: { type: Type.STRING }
                 },
-                explanation: { type: Type.STRING }
-              },
-              required: ["target", "produced", "phase", "explanation"]
+                required: ["target", "produced", "phase", "explanation"]
+              }
             }
-          }
-        },
-        required: ["phase", "confidence", "reasoning", "summary", "wordBreakdown"]
+          },
+          required: ["phase", "confidence", "reasoning", "summary", "wordBreakdown"]
+        }
       }
-    }
+    });
+    return JSON.parse(cleanJson(response.text));
   });
-  return JSON.parse(cleanJson(response.text));
 };
 
 export const extractTextFromImage = async (modelId: string, base64Image: string): Promise<string> => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY;
   const ai = new GoogleGenAI({ apiKey });
-  const response = await ai.models.generateContent({
-    model: modelId || 'gemini-2.0-flash',
-    contents: {
-      parts: [
-        { inlineData: { mimeType: "image/jpeg", data: base64Image } },
-        { text: "Extraia o texto manuscrito desta imagem. Retorne apenas as palavras em maiúsculas separadas por espaço." }
-      ]
-    }
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model: modelId || 'gemini-2.0-flash',
+      contents: {
+        parts: [
+          { inlineData: { mimeType: "image/jpeg", data: base64Image } },
+          { text: "Extraia o texto manuscrito desta imagem. Retorne apenas as palavras em maiúsculas separadas por espaço." }
+        ]
+      }
+    });
+    return (response.text || "").toUpperCase().trim();
   });
-  return (response.text || "").toUpperCase().trim();
 };
 
 export const generateStudentReport = async (modelId: string, studentName: string, assessments: any[]): Promise<{ text: string, sources: any[] }> => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY;
   const ai = new GoogleGenAI({ apiKey });
-  const response = await ai.models.generateContent({
-    model: modelId || 'gemini-2.0-flash',
-    contents: `Gere um parecer pedagógico para ${studentName} baseado nestas sondagens: ${JSON.stringify(assessments)}`,
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      tools: [{ googleSearch: {} }]
-    }
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model: modelId || 'gemini-2.0-flash',
+      contents: `Gere um parecer pedagógico para ${studentName} baseado nestas sondagens: ${JSON.stringify(assessments)}`,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        tools: [{ googleSearch: {} }]
+      }
+    });
+
+    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
+      title: chunk.web?.title || "Referência Técnica",
+      uri: chunk.web?.uri
+    })).filter((s: any) => s.uri) || [];
+
+    return { text: response.text || "", sources };
   });
-
-  const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
-    title: chunk.web?.title || "Referência Técnica",
-    uri: chunk.web?.uri
-  })).filter((s: any) => s.uri) || [];
-
-  return { text: response.text || "", sources };
 };
 
 export const blobToBase64 = async (blob: Blob): Promise<string> => {
