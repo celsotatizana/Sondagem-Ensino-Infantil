@@ -64,7 +64,7 @@ const App: React.FC = () => {
     lastAssessmentDate: ''
   });
 
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.0-flash');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-flash-latest');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
