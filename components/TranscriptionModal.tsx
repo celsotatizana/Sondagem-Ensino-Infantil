@@ -156,13 +156,7 @@ export const TranscriptionModal: React.FC<Props> = ({ student, onClose, onSave, 
         result.wordBreakdown = result.wordBreakdown.map((item: any) => {
           const norm = normalizePhase(item.phase);
           const canonical = CANONICAL_WRITING_PHASES.find(cw => normalizePhase(cw) === norm);
-
-          // If the produced text is missing or marked as "???", clear the phase
-          const isMissing = !item.produced || item.produced === '???' || item.produced.trim() === '';
-          return {
-            ...item,
-            phase: isMissing ? '' : (canonical || item.phase)
-          };
+          return { ...item, phase: canonical || item.phase };
         });
       }
 
@@ -374,7 +368,6 @@ export const TranscriptionModal: React.FC<Props> = ({ student, onClose, onSave, 
                           className="inline-block px-2 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300 rounded text-[9px] font-black uppercase border-none focus:ring-0 cursor-pointer appearance-none hover:bg-orange-200 transition-colors w-full"
                           title="Clique para alterar a classificação manual"
                         >
-                          <option value="">(SEM CLASSIFICAÇÃO)</option>
                           {CANONICAL_WRITING_PHASES.map(phase => (
                             <option key={phase} value={phase}>{phase}</option>
                           ))}
