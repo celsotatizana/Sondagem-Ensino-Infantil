@@ -542,11 +542,12 @@ const App: React.FC = () => {
         </main>
       </div>
 
-      {showForm && selectedStudent && <AssessmentForm student={selectedStudent} onSave={handleSaveAssessment} onCancel={() => setShowForm(false)} selectedModel={selectedModel} />}
+      {showForm && selectedStudent && <AssessmentForm student={selectedStudent} assessments={assessments} onSave={handleSaveAssessment} onCancel={() => setShowForm(false)} selectedModel={selectedModel} />}
 
       {showTranscriptionModal && studentForTranscription && (
         <TranscriptionModal
           student={studentForTranscription}
+          assessments={assessments}
           onClose={() => setShowTranscriptionModal(false)}
           onSave={handleSaveWritingAssessment}
           selectedModel={selectedModel}

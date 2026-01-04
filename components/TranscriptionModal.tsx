@@ -1,11 +1,12 @@
 
-import React, { useState, useRef, useMemo } from 'react';
-import { Loader2, Save, X, FileText, AlertTriangle, Sparkles, Brain, CalendarDays, Pencil, Lightbulb, ChevronDown, ChevronUp, Image as ImageIcon, Trash2, Wand2, Info, GraduationCap, History } from 'lucide-react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { Loader2, Save, X, FileText, AlertTriangle, Sparkles, Brain, CalendarDays, Pencil, Lightbulb, ChevronDown, ChevronUp, Image as ImageIcon, Trash2, Wand2, Info, GraduationCap, History, AlertCircle } from 'lucide-react';
 import { Student, AssessmentResult, AssessmentType, AssessmentPeriod, WritingPhase } from '../types';
 import { analyzeWritingTextOnly, extractTextFromImage } from '../services/geminiService';
 
 interface Props {
   student: Student;
+  assessments: AssessmentResult[];
   onClose: () => void;
   onSave: (result: AssessmentResult) => void;
   selectedModel: string;
@@ -54,7 +55,7 @@ const PHASE_HIERARCHY: Record<string, number> = {
   'ALFABÉTICA CONSOLIDADA': 3
 };
 
-export const TranscriptionModal: React.FC<Props> = ({ student, onClose, onSave, selectedModel }) => {
+export const TranscriptionModal: React.FC<Props> = ({ student, assessments, onClose, onSave, selectedModel }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [targetWord, setTargetWord] = useState<string>('');
@@ -64,12 +65,23 @@ export const TranscriptionModal: React.FC<Props> = ({ student, onClose, onSave, 
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<AssessmentPeriod>('Inicial');
+  const [hasExistingAssessment, setHasExistingAssessment] = useState(false);
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSuggestionPhase, setActiveSuggestionPhase] = useState<string | null>(null);
   const [showRecommendedActivities, setShowRecommendedActivities] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Verificar se existe classificação para o período selecionado
+  useEffect(() => {
+    const existingAssessment = assessments.some(
+      a => a.studentId === student.id &&
+        a.type === AssessmentType.WRITING &&
+        a.period === selectedPeriod
+    );
+    setHasExistingAssessment(existingAssessment);
+  }, [selectedPeriod, assessments, student.id]);
 
   const normalizePhase = (phase: string): string => {
     return phase.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -245,6 +257,15 @@ export const TranscriptionModal: React.FC<Props> = ({ student, onClose, onSave, 
             <p className="text-sm text-gray-500 font-bold">{student.name}</p>
           </div>
         </div>
+
+        {hasExistingAssessment && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 p-3 px-6 mb-6 flex items-center gap-3 animate-fade-in rounded-2xl">
+            <AlertCircle size={18} className="text-amber-600 dark:text-amber-500" />
+            <p className="text-sm font-bold text-amber-800 dark:text-amber-400">
+              Aluno já classificado neste período. Caso continue, a classificação anterior será sobreposta.
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           {/* LADO ESQUERDO: INPUTS */}

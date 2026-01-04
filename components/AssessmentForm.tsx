@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AssessmentType, AssessmentResult, Student, DrawingPhase, WritingPhase, AssessmentPeriod } from '../types';
 import { analyzeDrawing, blobToBase64 } from '../services/geminiService';
 import { Camera, CheckCircle, Loader2, FileText, BookOpen, ScanText, Brain, Trash2, Calculator, Layers, MessageCircle, Pencil, AlertCircle, Palette, Trees, Footprints, Info, Lightbulb, XCircle, ChevronDown, ChevronUp, Sparkles, Wand2, CalendarDays } from 'lucide-react';
 
 interface Props {
   student: Student;
+  assessments: AssessmentResult[];
   onSave: (result: AssessmentResult) => void;
   onCancel: () => void;
   selectedModel: string;
@@ -13,17 +14,28 @@ interface Props {
 
 const PERIODS: AssessmentPeriod[] = ['Inicial', '1º Bim', '2º Bim', '3º Bim', '4º Bim'];
 
-export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, selectedModel }) => {
+export const AssessmentForm: React.FC<Props> = ({ student, assessments, onSave, onCancel, selectedModel }) => {
   const [activeTab] = useState<AssessmentType>(AssessmentType.DRAWING);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDecisionExpanded, setIsDecisionExpanded] = useState(false);
   const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<AssessmentPeriod>('Inicial');
+  const [hasExistingAssessment, setHasExistingAssessment] = useState(false);
 
   const [formsData, setFormsData] = useState<any>({
     [AssessmentType.DRAWING]: { preview: null, analysis: null, observation: "" }
   });
+
+  // Verificar se existe classificação para o período selecionado
+  useEffect(() => {
+    const existingAssessment = assessments.some(
+      a => a.studentId === student.id &&
+        a.type === AssessmentType.DRAWING &&
+        a.period === selectedPeriod
+    );
+    setHasExistingAssessment(existingAssessment);
+  }, [selectedPeriod, assessments, student.id]);
 
   const updateFormData = (type: AssessmentType, data: any) => {
     setFormsData((prev: any) => ({ ...prev, [type]: { ...prev[type], ...data } }));
@@ -163,6 +175,15 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
           <button onClick={onCancel} className="p-2 text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={24} /></button>
         </div>
 
+        {hasExistingAssessment && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800 p-3 px-6 flex items-center gap-3 animate-fade-in">
+            <AlertCircle size={18} className="text-amber-600 dark:text-amber-500" />
+            <p className="text-sm font-bold text-amber-800 dark:text-amber-400">
+              Aluno já foi classificado neste período. Se você continuar, a classificação anterior será sobreposta.
+            </p>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#FDFBF7] dark:bg-[#0c0d0e]">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full items-stretch max-w-7xl mx-auto w-full">
             <div className="lg:col-span-5 flex flex-col gap-6">
@@ -178,8 +199,8 @@ export const AssessmentForm: React.FC<Props> = ({ student, onSave, onCancel, sel
                       key={p}
                       onClick={() => setSelectedPeriod(p)}
                       className={`py-2 px-1 rounded-xl text-[9px] font-black transition-all border-2 ${selectedPeriod === p
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100'
-                          : 'bg-white dark:bg-gray-700 text-gray-400 border-gray-100 dark:border-gray-600 hover:border-blue-200'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100'
+                        : 'bg-white dark:bg-gray-700 text-gray-400 border-gray-100 dark:border-gray-600 hover:border-blue-200'
                         }`}
                     >
                       {p}
